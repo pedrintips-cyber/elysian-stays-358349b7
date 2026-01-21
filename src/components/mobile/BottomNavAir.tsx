@@ -1,0 +1,66 @@
+import * as React from "react";
+import { Heart, House, MessageCircle, Search, User } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+type NavKey = "home" | "search" | "wishlists" | "messages" | "profile";
+
+const items: Array<{ key: NavKey; label: string; Icon: React.ComponentType<{ className?: string }> }> = [
+  { key: "home", label: "Início", Icon: House },
+  { key: "search", label: "Buscar", Icon: Search },
+  { key: "wishlists", label: "Favoritos", Icon: Heart },
+  { key: "messages", label: "Mensagens", Icon: MessageCircle },
+  { key: "profile", label: "Perfil", Icon: User },
+];
+
+export function BottomNavAir() {
+  const [active, setActive] = React.useState<NavKey>("home");
+
+  return (
+    <nav
+      aria-label="Navegação inferior"
+      className={cn(
+        "safe-pb fixed inset-x-0 bottom-0 z-50",
+        "border-t bg-surface/85 backdrop-blur-xl shadow-nav",
+      )}
+    >
+      <div className="mx-auto flex max-w-md items-center justify-between px-3 pb-2 pt-2">
+        {items.map(({ key, label, Icon }) => {
+          const isActive = active === key;
+          return (
+            <Button
+              key={key}
+              type="button"
+              variant="nav"
+              size="nav"
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => setActive(key)}
+              className={cn(
+                "flex flex-col gap-1 rounded-2xl px-2",
+                "transition-transform duration-200 active:scale-[0.98]",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid place-items-center",
+                  isActive ? "animate-nav-pop text-primary" : "text-muted-foreground",
+                )}
+              >
+                <Icon className={cn("h-[22px] w-[22px]", isActive ? "stroke-[1.8]" : "stroke-[1.6]")} />
+              </span>
+              <span
+                className={cn(
+                  "text-[11px] leading-none",
+                  isActive ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {label}
+              </span>
+            </Button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}

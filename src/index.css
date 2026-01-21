@@ -8,35 +8,49 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Premium, clean, Airbnb-inspired */
+    --background: 24 33% 99%;
+    --foreground: 222 30% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 30% 12%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Coral (Airbnb-like), softened */
+    --primary: 7 84% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Optional secondary accent (mint) for subtle highlights */
+    --primary-glow: 160 55% 72%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 30% 12%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 18% 95%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 210 18% 95%;
+    --accent-foreground: 222 30% 12%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 16% 90%;
+    --input: 220 16% 90%;
+    --ring: 7 84% 60%;
 
-    --radius: 0.5rem;
+    --radius: 1.25rem;
+
+    /* Signature surfaces */
+    --surface: 0 0% 100%;
+    --surface-2: 24 25% 98%;
+    --shadow-soft: 0 18px 40px -18px hsl(222 30% 12% / 0.22);
+    --shadow-elev: 0 10px 30px -12px hsl(222 30% 12% / 0.18);
+    --shadow-nav: 0 -8px 28px -14px hsl(222 30% 12% / 0.22);
+    --gradient-hero: radial-gradient(1200px 700px at 50% -10%, hsl(var(--primary) / 0.18), transparent 55%),
+      radial-gradient(800px 500px at 90% 15%, hsl(var(--primary-glow) / 0.22), transparent 60%);
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +114,18 @@ All colors MUST be HSL.
   }
 
   body {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+      "Segoe UI Emoji";
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .safe-pb {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .glass {
+    background: hsl(var(--surface) / 0.78);
+    backdrop-filter: blur(14px);
   }
 }
