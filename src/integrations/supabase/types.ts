@@ -14,7 +14,118 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          property_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          property_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          property_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          amenities: string[] | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          created_at: string | null
+          description: string | null
+          guests: number | null
+          host_id: string | null
+          id: string
+          image_url: string
+          price_per_night: number
+          rating: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          amenities?: string[] | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city: string
+          created_at?: string | null
+          description?: string | null
+          guests?: number | null
+          host_id?: string | null
+          id?: string
+          image_url: string
+          price_per_night: number
+          rating?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          amenities?: string[] | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          created_at?: string | null
+          description?: string | null
+          guests?: number | null
+          host_id?: string | null
+          id?: string
+          image_url?: string
+          price_per_night?: number
+          rating?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
