@@ -1,11 +1,12 @@
  import { useParams, useNavigate } from "react-router-dom";
  import { useEffect, useState } from "react";
  import { supabase } from "@/lib/supabase";
- import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
  import { Badge } from "@/components/ui/badge";
  import { ArrowLeft, Heart, Star, Users, Bed, Bath } from "lucide-react";
  import { useAuth } from "@/hooks/useAuth";
  import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
  
  interface Property {
    id: string;
@@ -127,90 +128,130 @@
    }
  
    return (
-     <div className="min-h-screen bg-background pb-24">
-       <div className="relative">
-         <img
-           src={property.image_url}
-           alt={property.title}
-           className="w-full h-[400px] object-cover"
-         />
-         <Button
-           onClick={() => navigate(-1)}
-           variant="ghost"
-           size="icon"
-           className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm hover:bg-white"
-         >
-           <ArrowLeft className="h-5 w-5" />
-         </Button>
-         <Button
-           onClick={toggleFavorite}
-           variant="ghost"
-           size="icon"
-           className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white"
-         >
-           <Heart
-             className={`h-5 w-5 ${isFavorite ? "fill-primary text-primary" : ""}`}
-           />
-         </Button>
-       </div>
- 
-       <div className="max-w-4xl mx-auto px-4 py-6">
-         <div className="mb-4">
-           <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
-           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-             <div className="flex items-center gap-1">
-               <Star className="h-4 w-4 fill-primary text-primary" />
-               <span className="font-medium">{property.rating}</span>
-             </div>
-             <span>•</span>
-             <span>{property.city}</span>
-           </div>
-         </div>
- 
-         <div className="flex gap-6 mb-6 text-sm">
-           <div className="flex items-center gap-2">
-             <Users className="h-5 w-5 text-muted-foreground" />
-             <span>{property.guests} hóspedes</span>
-           </div>
-           <div className="flex items-center gap-2">
-             <Bed className="h-5 w-5 text-muted-foreground" />
-             <span>{property.bedrooms} quartos</span>
-           </div>
-           <div className="flex items-center gap-2">
-             <Bath className="h-5 w-5 text-muted-foreground" />
-             <span>{property.bathrooms} banheiros</span>
-           </div>
-         </div>
- 
-         <div className="border-t border-b py-6 mb-6">
-           <p className="text-muted-foreground">{property.description}</p>
-         </div>
- 
-         <div className="mb-6">
-           <h2 className="text-xl font-semibold mb-3">Comodidades</h2>
-           <div className="flex flex-wrap gap-2">
-             {property.amenities.map((amenity, index) => (
-               <Badge key={index} variant="secondary">
-                 {amenity}
-               </Badge>
-             ))}
-           </div>
-         </div>
- 
-         <div className="sticky bottom-20 bg-white border-t shadow-soft p-4 rounded-t-3xl">
-           <div className="flex items-center justify-between">
-             <div>
-               <span className="text-2xl font-bold">
-                 R$ {property.price_per_night.toFixed(0)}
-               </span>
-               <span className="text-sm text-muted-foreground"> / noite</span>
-             </div>
-             <Button size="lg" className="rounded-2xl">
-               Reservar
-             </Button>
-           </div>
-         </div>
-       </div>
-     </div>
+    <div className="min-h-dvh bg-background">
+      <div className="relative mx-auto min-h-dvh max-w-md overflow-hidden">
+        <div className="relative">
+          <img
+            src={property.image_url}
+            alt={property.title}
+            loading="lazy"
+            className="h-[420px] w-full object-cover"
+          />
+
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/60 to-transparent" />
+
+          <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
+            <Button
+              onClick={() => navigate(-1)}
+              variant="pill"
+              size="icon"
+              className="pointer-events-auto"
+              aria-label="Voltar"
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={1.7} />
+            </Button>
+
+            <Button
+              onClick={toggleFavorite}
+              variant="pill"
+              size="icon"
+              className="pointer-events-auto"
+              aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            >
+              <Heart
+                className={cn("h-5 w-5", isFavorite && "fill-primary text-primary")}
+                strokeWidth={1.7}
+              />
+            </Button>
+          </div>
+        </div>
+
+        <main className="px-4 pb-32 pt-5">
+          <header className="space-y-2">
+            <h1 className="text-[26px] font-semibold leading-[1.08] tracking-[-0.02em]">
+              {property.title}
+            </h1>
+
+            <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 fill-primary text-primary" />
+                <span className="font-medium text-foreground">{property.rating}</span>
+              </div>
+              <span aria-hidden="true">•</span>
+              <span>{property.city}</span>
+            </div>
+          </header>
+
+          <section className="mt-5 grid grid-cols-3 gap-2 rounded-3xl border bg-surface p-3 shadow-elev">
+            <div className="rounded-2xl bg-surface-2 px-3 py-2 text-left">
+              <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>Hóspedes</span>
+              </div>
+              <div className="mt-1 text-[14px] font-semibold text-foreground">{property.guests}</div>
+            </div>
+            <div className="rounded-2xl bg-surface-2 px-3 py-2 text-left">
+              <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <Bed className="h-4 w-4" />
+                <span>Quartos</span>
+              </div>
+              <div className="mt-1 text-[14px] font-semibold text-foreground">{property.bedrooms}</div>
+            </div>
+            <div className="rounded-2xl bg-surface-2 px-3 py-2 text-left">
+              <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <Bath className="h-4 w-4" />
+                <span>Banheiros</span>
+              </div>
+              <div className="mt-1 text-[14px] font-semibold text-foreground">{property.bathrooms}</div>
+            </div>
+          </section>
+
+          <section className="mt-6 rounded-3xl border bg-surface p-4 shadow-soft">
+            <h2 className="text-[15px] font-semibold text-foreground">Sobre este lugar</h2>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+              {property.description || "Sem descrição no momento. Em breve, mais detalhes sobre o espaço."}
+            </p>
+          </section>
+
+          <section className="mt-6">
+            <h2 className="text-[15px] font-semibold text-foreground">Comodidades</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(property.amenities?.length ? property.amenities : ["Wi‑Fi", "Cozinha", "Ar‑condicionado"]).map(
+                (amenity, index) => (
+                  <Badge key={index} variant="secondary" className="rounded-full">
+                    {amenity}
+                  </Badge>
+                ),
+              )}
+            </div>
+          </section>
+        </main>
+
+        <aside
+          className={cn(
+            "safe-pb fixed inset-x-0 bottom-0 z-50",
+            "border-t bg-surface/85 backdrop-blur-xl shadow-nav",
+          )}
+        >
+          <div className="mx-auto max-w-md px-4 pb-3 pt-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-[12px] font-medium text-muted-foreground">Preço por noite</div>
+                <div className="mt-0.5 flex items-baseline gap-2">
+                  <span className="text-[20px] font-semibold tracking-[-0.02em] text-foreground">
+                    R$ {property.price_per_night.toFixed(0)}
+                  </span>
+                  <span className="text-[12px] text-muted-foreground">/ noite</span>
+                </div>
+              </div>
+
+              <Button size="lg" className="h-12 rounded-2xl px-6">
+                Reservar
+              </Button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
    );
  }
