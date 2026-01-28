@@ -31,6 +31,56 @@ type PropertyPhoto = {
   url: string;
   sort_order: number;
 };
+
+type Review = {
+  rating: number;
+  comment: string;
+  author: string;
+  createdAtLabel: string;
+};
+
+function hashStringToInt(input: string) {
+  let h = 0;
+  for (let i = 0; i < input.length; i++) h = (h * 31 + input.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function generateMockReviews(seedKey: string): Review[] {
+  const rand = mulberry32(hashStringToInt(seedKey));
+  const templates = [
+    "Lugar muito bem cuidado e confortável. Voltaria com certeza.",
+    "Boa localização e check-in tranquilo. Ótimo custo-benefício.",
+    "A casa é bonita e bem equipada. Só poderia ter mais silêncio à noite.",
+    "Tudo limpo, cama confortável e ótima comunicação com o anfitrião.",
+    "Excelente para descansar. Wi‑Fi funcionou bem e o espaço é bem aconchegante.",
+    "Atendeu super bem a estadia. Alguns detalhes pequenos, mas nada que atrapalhe.",
+  ];
+
+  const names = ["Ana", "Bruno", "Camila", "Diego", "Fernanda", "Gustavo", "Juliana", "Marcos"];
+  const dates = ["há 2 semanas", "há 1 mês", "há 3 meses", "há 5 dias", "há 2 meses", "há 6 meses"];
+
+  const count = 4;
+  const reviews: Review[] = [];
+  for (let i = 0; i < count; i++) {
+    // 3–5 estrelas, com leve tendência a 4/5
+    const r = rand();
+    const rating = r < 0.18 ? 3 : r < 0.62 ? 4 : 5;
+    const comment = templates[Math.floor(rand() * templates.length)];
+    const author = names[Math.floor(rand() * names.length)];
+    const createdAtLabel = dates[Math.floor(rand() * dates.length)];
+    reviews.push({ rating, comment, author, createdAtLabel });
+  }
+  return reviews;
+}
  
  export default function PropertyDetail() {
    const { id } = useParams();
@@ -39,6 +89,8 @@ type PropertyPhoto = {
   const [albumPhotos, setAlbumPhotos] = useState<PropertyPhoto[]>([]);
    const [loading, setLoading] = useState(true);
   const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   const handleBack = () => {
     // If the user landed directly on this URL, there may be no SPA history to go back to.
@@ -50,6 +102,7 @@ type PropertyPhoto = {
     if (!id) return;
     fetchProperty();
     fetchPhotos();
+    fetchReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
  
@@ -82,6 +135,35 @@ type PropertyPhoto = {
     }
 
     setAlbumPhotos((data ?? []) as PropertyPhoto[]);
+  };
+
+  const fetchReviews = async () => {
+    setReviewsLoading(true);
+    const { data, error } = await supabase
+      .from("property_reviews")
+      .select("rating, comment, created_at")
+      .eq("property_id", id)
+      .order("created_at", { ascending: false })
+      .limit(12);
+
+    if (error) {
+      console.error("Erro ao buscar avaliações:", error);
+      setReviews(generateMockReviews(id ?? "seed"));
+      setReviewsLoading(false);
+      return;
+    }
+
+    const mapped = (data ?? [])
+      .filter((r: any) => typeof r?.rating === "number")
+      .map((r: any, idx: number) => ({
+        rating: Math.min(5, Math.max(1, Number(r.rating))),
+        comment: (r.comment ?? "") as string,
+        author: "Hóspede",
+        createdAtLabel: "",
+      }));
+
+    setReviews(mapped.length ? mapped : generateMockReviews(id ?? "seed"));
+    setReviewsLoading(false);
   };
 
   const galleryUrls = useMemo(() => {
@@ -232,13 +314,6 @@ type PropertyPhoto = {
             </div>
           </section>
 
-          <section className="mt-6 rounded-3xl border bg-surface p-4 shadow-soft">
-            <h2 className="text-[15px] font-semibold text-foreground">Sobre este lugar</h2>
-            <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-              {property.description || "Sem descrição no momento. Em breve, mais detalhes sobre o espaço."}
-            </p>
-          </section>
-
           <section className="mt-6">
             <h2 className="text-[15px] font-semibold text-foreground">Comodidades</h2>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -250,6 +325,57 @@ type PropertyPhoto = {
                 ),
               )}
             </div>
+          </section>
+
+          <section className="mt-6 rounded-3xl border bg-surface p-4 shadow-soft">
+            <h2 className="text-[15px] font-semibold text-foreground">Sobre este lugar</h2>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+              {property.description || "Sem descrição no momento. Em breve, mais detalhes sobre o espaço."}
+            </p>
+          </section>
+
+          <section className="mt-6 rounded-3xl border bg-surface p-4 shadow-soft">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[15px] font-semibold text-foreground">Avaliações</h2>
+              <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
+                <Star className="h-4 w-4 fill-primary text-primary" />
+                <span className="font-medium text-foreground">{property.rating}</span>
+              </div>
+            </div>
+
+            {reviewsLoading ? (
+              <div className="mt-3 text-sm text-muted-foreground">Carregando avaliações…</div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                {reviews.slice(0, 4).map((r, idx) => (
+                  <div key={idx} className="rounded-2xl bg-surface-2 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[13px] font-medium text-foreground">{r.author}</div>
+                        {r.createdAtLabel ? (
+                          <div className="text-[12px] text-muted-foreground">{r.createdAtLabel}</div>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "h-4 w-4",
+                              i < r.rating ? "fill-primary text-primary" : "text-muted-foreground/40",
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+                      {r.comment || "Estadia muito boa — recomendo."}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </main>
 

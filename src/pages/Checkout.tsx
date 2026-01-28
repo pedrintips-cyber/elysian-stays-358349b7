@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
  import { useNavigate, useSearchParams } from "react-router-dom";
  import { supabase } from "@/lib/supabase";
  import { useToast } from "@/hooks/use-toast";
@@ -7,8 +7,11 @@ import { useEffect, useState } from "react";
  import { Label } from "@/components/ui/label";
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
  import { Slider } from "@/components/ui/slider";
- import { ArrowLeft, Calendar, DollarSign, Loader2 } from "lucide-react";
+ import { ArrowLeft, Calendar as CalendarIcon, DollarSign, Loader2 } from "lucide-react";
   import { PixPaymentDialog } from "@/components/payments/PixPaymentDialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
  
  interface Property {
    id: string;
@@ -27,6 +30,7 @@ import { useEffect, useState } from "react";
  
    const [property, setProperty] = useState<Property | null>(null);
    const [nights, setNights] = useState(1);
+    const [checkInDate, setCheckInDate] = useState<Date | undefined>(undefined);
    const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
    const [guestPhone, setGuestPhone] = useState("");
@@ -39,6 +43,17 @@ import { useEffect, useState } from "react";
     const [pixOpen, setPixOpen] = useState(false);
     const [pixQrCode, setPixQrCode] = useState<string | null>(null);
     const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null);
+
+    const maxNights = useMemo(() => {
+      if (!property?.price_per_night) return 30;
+      const computed = Math.floor(1500 / Number(property.price_per_night));
+      return Math.max(1, Math.min(30, computed || 1));
+    }, [property?.price_per_night]);
+
+    useEffect(() => {
+      // garante que o slider não fique acima do permitido
+      setNights((prev) => Math.min(prev, maxNights));
+    }, [maxNights]);
  
    useEffect(() => {
      if (!propertyId) {
@@ -81,7 +96,16 @@ import { useEffect, useState } from "react";
    const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
  
-    if (!property) return;
+     if (!property) return;
+
+      if (!checkInDate) {
+        toast({
+          variant: "destructive",
+          title: "Escolha a data de check-in",
+          description: "Selecione o dia de entrada para continuar.",
+        });
+        return;
+      }
 
       // basic client-side validation (server validates again)
       const cpfDigits = guestCpf.replace(/\D+/g, "");
@@ -96,7 +120,17 @@ import { useEffect, useState } from "react";
  
      setSubmitting(true);
  
-     const totalPrice = property.price_per_night * nights;
+      const totalPrice = property.price_per_night * nights;
+
+      if (totalPrice > 1500) {
+        setSubmitting(false);
+        toast({
+          variant: "destructive",
+          title: "Valor acima do limite do PIX",
+          description: `O total passou de R$ 1.500,00. Reduza as diárias (máx. ${maxNights}) para gerar o PIX.`,
+        });
+        return;
+      }
 
       // 1) Create booking first (pending payment)
       // IMPORTANT: avoid `.select().single()` on insert because it requires SELECT permission under RLS.
@@ -110,6 +144,7 @@ import { useEffect, useState } from "react";
               id: bookingId,
               user_id: userId,
               property_id: property.id,
+               check_in_date: format(checkInDate, "yyyy-MM-dd"),
               nights,
               price_per_night: property.price_per_night,
               total_price: totalPrice,
@@ -251,10 +286,52 @@ import { useEffect, useState } from "react";
              </div>
            </Card>
  
-           <Card className="shadow-soft">
+            <Card className="shadow-soft">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-[16px]">
+                  <CalendarIcon className="h-5 w-5" />
+                  Data de check-in
+                </CardTitle>
+                <CardDescription>Escolha o dia de entrada</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full justify-between rounded-2xl"
+                      disabled={submitting}
+                    >
+                      <span>
+                        {checkInDate ? format(checkInDate, "dd/MM/yyyy") : "Selecionar data"}
+                      </span>
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={checkInDate}
+                      onSelect={setCheckInDate}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const d = new Date(date);
+                        d.setHours(0, 0, 0, 0);
+                        return d < today;
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-soft">
              <CardHeader>
                <CardTitle className="flex items-center gap-2 text-[16px]">
-                 <Calendar className="h-5 w-5" />
+                  <CalendarIcon className="h-5 w-5" />
                  Quantas diárias?
                </CardTitle>
                <CardDescription>Escolha a duração da sua estadia</CardDescription>
@@ -265,17 +342,23 @@ import { useEffect, useState } from "react";
                    {nights} {nights === 1 ? "dia" : "dias"}
                  </span>
                  <span className="text-[13px] text-muted-foreground">
-                   1 a 30 dias
+                    1 a {maxNights} dias
                  </span>
                </div>
                <Slider
                  value={[nights]}
                  onValueChange={(v) => setNights(v[0])}
                  min={1}
-                 max={30}
+                  max={maxNights}
                  step={1}
                  className="w-full"
                />
+
+                {maxNights < 30 && (
+                  <div className="text-[12px] text-muted-foreground">
+                    Limite do PIX: até R$ 1.500,00 • Máx. {maxNights} {maxNights === 1 ? "diária" : "diárias"} para este imóvel.
+                  </div>
+                )}
              </CardContent>
            </Card>
  
@@ -287,6 +370,12 @@ import { useEffect, useState } from "react";
                </CardTitle>
              </CardHeader>
              <CardContent className="space-y-3">
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-muted-foreground">Check-in</span>
+                  <span className="font-medium text-foreground">
+                    {checkInDate ? format(checkInDate, "dd/MM/yyyy") : "—"}
+                  </span>
+                </div>
                <div className="flex justify-between text-[14px]">
                  <span className="text-muted-foreground">
                    R$ {property.price_per_night.toFixed(0)} × {nights} {nights === 1 ? "noite" : "noites"}
@@ -365,7 +454,7 @@ import { useEffect, useState } from "react";
                type="submit"
                size="lg"
                className="w-full h-12 rounded-2xl"
-               disabled={submitting}
+                disabled={submitting || !checkInDate}
              >
                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                Confirmar reserva — R$ {total.toFixed(2)}
