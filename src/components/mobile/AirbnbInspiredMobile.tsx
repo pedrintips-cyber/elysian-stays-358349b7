@@ -9,6 +9,9 @@ import { supabase } from "@/lib/supabase";
 import { AmbientGlow } from "./AmbientGlow";
 import { BottomNavAir } from "./BottomNavAir";
 import { Listing, ListingCardAir } from "./ListingCardAir";
+import { SearchFiltersDialog, type SearchFiltersValue } from "./SearchFiltersDialog";
+
+import airbnbLogo from "@/assets/airbnb-logo.svg";
 
 export default function AirbnbInspiredMobile() {
   const [searchParams] = useSearchParams();
@@ -16,6 +19,13 @@ export default function AirbnbInspiredMobile() {
   const [query, setQuery] = React.useState("");
   const [listings, setListings] = React.useState<Listing[]>([]);
   const [loading, setLoading] = React.useState(true);
+
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState<SearchFiltersValue>({
+    city: null,
+    priceMin: null,
+    priceMax: null,
+  });
 
   const [geoCities, setGeoCities] = React.useState<string[] | null>(null);
   const [geoStateLabel, setGeoStateLabel] = React.useState<string | null>(null);
@@ -31,7 +41,7 @@ export default function AirbnbInspiredMobile() {
 
   React.useEffect(() => {
     fetchListings();
-  }, [showFavorites, query, geoCities]);
+  }, [showFavorites, query, geoCities, filters]);
 
   React.useEffect(() => {
     // Prompt once (only on home explore view)
@@ -125,12 +135,25 @@ export default function AirbnbInspiredMobile() {
     try {
       let queryBuilder = supabase
         .from("properties")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
+
+      if (filters.city) {
+        queryBuilder = queryBuilder.eq("city", filters.city);
+      }
+
+      if (typeof filters.priceMin === "number") {
+        queryBuilder = queryBuilder.gte("price_per_night", filters.priceMin);
+      }
+
+      if (typeof filters.priceMax === "number") {
+        queryBuilder = queryBuilder.lte("price_per_night", filters.priceMax);
+      }
 
       // Manual search has priority
       if (query.trim()) {
-        queryBuilder = queryBuilder.ilike("city", `%${query}%`);
+        const q = query.trim();
+        // city OR title
+        queryBuilder = queryBuilder.or(`city.ilike.%${q}%,title.ilike.%${q}%`);
       } else if (geoCities?.length) {
         // Geo filter (auto)
         queryBuilder = queryBuilder.in("city", geoCities);
@@ -141,8 +164,15 @@ export default function AirbnbInspiredMobile() {
       if (error) {
         console.error("Erro ao buscar propriedades:", error);
       } else {
+        // embaralha para evitar agrupamento por cidade
+        const shuffled = [...data];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
         setListings(
-          data.map((p) => ({
+          shuffled.map((p) => ({
             id: p.id,
             title: p.title,
             subtitle: p.city,
@@ -171,14 +201,17 @@ export default function AirbnbInspiredMobile() {
         >
           <div className="px-4 pb-3 pt-4">
             <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-[12px] font-medium text-muted-foreground">
-                  Explore
-                </span>
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                className="flex items-center gap-2"
+                aria-label="Ir para início"
+              >
+                <img src={airbnbLogo} alt="Airbnb" className="h-6 w-auto" />
                 <span className="text-[18px] font-semibold tracking-[-0.02em] text-foreground">
-                  stay
+                  airbnb
                 </span>
-              </div>
+              </button>
             </div>
 
             {!showFavorites && !showSearch && !geoPromptDismissed && (
@@ -264,7 +297,7 @@ export default function AirbnbInspiredMobile() {
                       "w-full bg-transparent text-[14px] font-medium text-foreground",
                       "placeholder:text-muted-foreground focus:outline-none",
                     )}
-                    placeholder="Buscar por cidade..."
+                    placeholder="Buscar por cidade ou título..."
                   />
                 </div>
               </div>
@@ -274,6 +307,7 @@ export default function AirbnbInspiredMobile() {
                 size="icon"
                 aria-label="Filtros"
                 className="h-12 w-12"
+                onClick={() => setFiltersOpen(true)}
               >
                 <SlidersHorizontal className="h-5 w-5" strokeWidth={1.7} />
               </Button>
@@ -281,6 +315,20 @@ export default function AirbnbInspiredMobile() {
             )}
           </div>
         </header>
+
+        <SearchFiltersDialog
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          value={filters}
+          onApply={(v) => setFilters(v)}
+          onClear={() =>
+            setFilters({
+              city: null,
+              priceMin: null,
+              priceMax: null,
+            })
+          }
+        />
 
         <main className="relative px-4 pb-28 pt-4">
           <h1 className="sr-only">

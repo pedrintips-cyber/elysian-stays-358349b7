@@ -353,12 +353,6 @@ import { format } from "date-fns";
                  step={1}
                  className="w-full"
                />
-
-                {maxNights < 30 && (
-                  <div className="text-[12px] text-muted-foreground">
-                    Limite do PIX: até R$ 1.500,00 • Máx. {maxNights} {maxNights === 1 ? "diária" : "diárias"} para este imóvel.
-                  </div>
-                )}
              </CardContent>
            </Card>
  
