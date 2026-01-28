@@ -11,6 +11,8 @@ import { BottomNavAir } from "./BottomNavAir";
 import { Listing, ListingCardAir } from "./ListingCardAir";
 import { SearchFiltersDialog, type SearchFiltersValue } from "./SearchFiltersDialog";
 
+import airbnbLogo from "@/assets/airbnb-logo.svg";
+
 
 export default function AirbnbInspiredMobile() {
   const [searchParams] = useSearchParams();
@@ -203,11 +205,12 @@ export default function AirbnbInspiredMobile() {
               <button
                 type="button"
                 onClick={() => navigate("/")}
-                className="flex items-center"
+                className="flex items-center gap-2"
                 aria-label="Ir para início"
               >
-                <span className="text-[22px] font-semibold tracking-[-0.03em] text-primary">
-                  Bengui
+                <img src={airbnbLogo} alt="Airbnb" className="h-6 w-auto" />
+                <span className="text-[18px] font-semibold tracking-[-0.02em] text-foreground">
+                  airbnb
                 </span>
               </button>
             </div>
