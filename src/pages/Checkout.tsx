@@ -44,11 +44,14 @@ import { format } from "date-fns";
     const [pixQrCode, setPixQrCode] = useState<string | null>(null);
     const [pixCopyPaste, setPixCopyPaste] = useState<string | null>(null);
 
+  // Limite máximo permitido pelo adquirente para PIX (não exibimos o número na UI).
+  const PIX_MAX_TOTAL = 1000;
+
     const maxNights = useMemo(() => {
       if (!property?.price_per_night) return 30;
-      const computed = Math.floor(1500 / Number(property.price_per_night));
+    const computed = Math.floor(PIX_MAX_TOTAL / Number(property.price_per_night));
       return Math.max(1, Math.min(30, computed || 1));
-    }, [property?.price_per_night]);
+  }, [property?.price_per_night]);
 
     useEffect(() => {
       // garante que o slider não fique acima do permitido
@@ -122,12 +125,12 @@ import { format } from "date-fns";
  
       const totalPrice = property.price_per_night * nights;
 
-      if (totalPrice > 1500) {
+    if (totalPrice > PIX_MAX_TOTAL) {
         setSubmitting(false);
         toast({
           variant: "destructive",
-          title: "Valor acima do limite do PIX",
-          description: `O total passou de R$ 1.500,00. Reduza as diárias (máx. ${maxNights}) para gerar o PIX.`,
+        title: "Valor indisponível para PIX",
+        description: `Ajuste as diárias (máx. ${maxNights}) para continuar.`,
         });
         return;
       }
