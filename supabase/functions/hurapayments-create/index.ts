@@ -43,7 +43,7 @@ function extractProviderUserMessage(rawJson: unknown): string | null {
     if (typeof msg !== "string" || !msg.trim()) return null;
     // Normalize common provider errors into user-friendly PT-BR.
     if (/Amount above maximum for PIX/i.test(msg) || /maximum for PIX/i.test(msg)) {
-      return "O valor total passou do limite do PIX (máx. R$ 1.500,00). Reduza a quantidade de diárias ou escolha outra forma de pagamento.";
+      return "O valor total está acima do permitido para PIX. Reduza a quantidade de diárias e tente novamente.";
     }
     if (/All acquirers failed/i.test(msg) || /adquirente/i.test(msg)) {
       return "O pagamento está indisponível no momento (falha ao processar com o adquirente). Tente novamente em alguns minutos.";
