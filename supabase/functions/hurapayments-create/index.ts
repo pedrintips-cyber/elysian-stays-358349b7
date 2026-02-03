@@ -45,6 +45,9 @@ function extractProviderUserMessage(rawJson: unknown): string | null {
     if (/Amount above maximum for PIX/i.test(msg) || /maximum for PIX/i.test(msg)) {
       return "O valor total passou do limite do PIX (máx. R$ 1.500,00). Reduza a quantidade de diárias ou escolha outra forma de pagamento.";
     }
+    if (/All acquirers failed/i.test(msg) || /adquirente/i.test(msg)) {
+      return "O pagamento está indisponível no momento (falha ao processar com o adquirente). Tente novamente em alguns minutos.";
+    }
     return msg;
   } catch {
     return null;
