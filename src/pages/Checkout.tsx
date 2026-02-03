@@ -48,10 +48,13 @@ import { format } from "date-fns";
   const PIX_MAX_TOTAL = 1000;
 
     const maxNights = useMemo(() => {
-      if (!property?.price_per_night) return 30;
-    const computed = Math.floor(PIX_MAX_TOTAL / Number(property.price_per_night));
+      // Enquanto o preço não estiver carregado, não permita selecionar várias diárias
+      // para evitar que o usuário consiga “passar do máximo” antes do cálculo.
+      if (!property?.price_per_night) return 1;
+
+      const computed = Math.floor(PIX_MAX_TOTAL / Number(property.price_per_night));
       return Math.max(1, Math.min(30, computed || 1));
-  }, [property?.price_per_night]);
+    }, [property?.price_per_night]);
 
     useEffect(() => {
       // garante que o slider não fique acima do permitido
@@ -121,19 +124,14 @@ import { format } from "date-fns";
         return;
       }
  
-     setSubmitting(true);
- 
-      const totalPrice = property.price_per_night * nights;
+      setSubmitting(true);
 
-    if (totalPrice > PIX_MAX_TOTAL) {
-        setSubmitting(false);
-        toast({
-          variant: "destructive",
-        title: "Valor indisponível para PIX",
-        description: `Ajuste as diárias (máx. ${maxNights}) para continuar.`,
-        });
-        return;
-      }
+      // Blindagem extra: se, por algum motivo (race condition/estado antigo),
+      // o usuário estiver acima do máximo, ajustamos automaticamente.
+      const effectiveNights = Math.min(nights, maxNights);
+      if (effectiveNights !== nights) setNights(effectiveNights);
+
+      const totalPrice = property.price_per_night * effectiveNights;
 
       // 1) Create booking first (pending payment)
       // IMPORTANT: avoid `.select().single()` on insert because it requires SELECT permission under RLS.
@@ -148,7 +146,7 @@ import { format } from "date-fns";
               user_id: userId,
               property_id: property.id,
                check_in_date: format(checkInDate, "yyyy-MM-dd"),
-              nights,
+              nights: effectiveNights,
               price_per_night: property.price_per_night,
               total_price: totalPrice,
               guest_name: guestName.trim(),
