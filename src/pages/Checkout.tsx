@@ -20,6 +20,31 @@ import { format } from "date-fns";
    price_per_night: number;
    image_url: string;
  }
+
+function createUuidV4() {
+  // Alguns navegadores (principalmente Android mais antigo) não suportam crypto.randomUUID().
+  // Garantimos um fallback para evitar "tela branca" por exception.
+  try {
+    const c: any = typeof crypto !== "undefined" ? crypto : null;
+    if (c?.randomUUID) return c.randomUUID() as string;
+
+    if (c?.getRandomValues) {
+      const bytes = new Uint8Array(16);
+      c.getRandomValues(bytes);
+      // RFC4122 v4
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+      return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    }
+  } catch {
+    // ignore
+  }
+
+  // Último fallback (não-criptográfico, mas evita crash)
+  const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+  return `${s4()}${s4()}-${s4()}-4${s4().slice(1)}-${((8 + Math.random() * 4) | 0).toString(16)}${s4().slice(1)}-${s4()}${s4()}${s4()}`;
+}
  
  export default function Checkout() {
    const [searchParams] = useSearchParams();
@@ -136,7 +161,7 @@ import { format } from "date-fns";
       // 1) Create booking first (pending payment)
       // IMPORTANT: avoid `.select().single()` on insert because it requires SELECT permission under RLS.
       // We generate the id client-side so we can proceed to payment without needing a returning row.
-      const bookingId = crypto.randomUUID();
+      const bookingId = createUuidV4();
       const { error: bookingErr } = await supabase
         .from("bookings")
         .insert(
